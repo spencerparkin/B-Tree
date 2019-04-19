@@ -19,7 +19,8 @@ namespace BTree
 
         private void buttonAddKey_Click(object sender, EventArgs e)
         {
-
+            string key = this.textBox.Text;
+            key = null;
         }
 
         private void buttonRemoveKey_Click(object sender, EventArgs e)
