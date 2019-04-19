@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace BTree
 {
-    class BTree
+    public class BTree
     {
         public BTree(int maxKeys = 5)
         {

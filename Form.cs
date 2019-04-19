@@ -12,15 +12,22 @@ namespace BTree
 {
     public partial class Form : System.Windows.Forms.Form
     {
+        public BTree tree;
+
         public Form()
         {
             InitializeComponent();
+
+            this.tree = new BTree();
         }
 
         private void buttonAddKey_Click(object sender, EventArgs e)
         {
             string key = this.textBox.Text;
-            key = null;
+            
+            tree.Insert(key, key);
+
+            //...
         }
 
         private void buttonRemoveKey_Click(object sender, EventArgs e)
