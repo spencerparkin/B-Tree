@@ -15,7 +15,7 @@ namespace BTree
 
         public void Insert(string key, object value)
         {
-            KeyValuePair keyValuePair = root.FindKeyValuePair(key);
+            var keyValuePair = FindKeyValuePair(key);
             if(keyValuePair != null)
                 keyValuePair.value = value;
             else
@@ -44,7 +44,7 @@ namespace BTree
                 else
                 {
                     node.keyList.Insert(i, keyValuePair);
-                    node.childList.Insert(i, new Node(node));
+                    node.childList.Insert(i + 1, new Node(node));
 
                     while(node.keyList.Count > maxKeys)
                     {
@@ -89,6 +89,8 @@ namespace BTree
                             root.keyList.Add(keyValuePair);
                             root.childList.Add(leftNode);
                             root.childList.Add(rightNode);
+                            leftNode.parent = root;
+                            rightNode.parent = root;
 
                             break;
                         }
@@ -104,13 +106,19 @@ namespace BTree
 
         public object Find(string key)
         {
+            var keyValuePair = FindKeyValuePair(key);
+            return keyValuePair != null ? keyValuePair.value : null;
+        }
+
+        private KeyValuePair FindKeyValuePair(string key)
+        {
             Node node = root;
             
             while(true)
             {
                 KeyValuePair keyValuePair = node.FindKeyValuePair(key);
                 if(keyValuePair != null)
-                    return keyValuePair.value;
+                    return keyValuePair;
 
                 int i = node.FindBranch(key);
                 if(i == -1)
@@ -127,6 +135,8 @@ namespace BTree
             public Node(Node parent)
             {
                 this.parent = parent;
+                keyList = new List<KeyValuePair>();
+                childList = new List<Node>();
             }
 
             public int FindBranch(string key)
@@ -136,7 +146,7 @@ namespace BTree
 
                 for(int i = 0; i < keyList.Count; i++)
                 {
-                    int result = string.Compare(keyList[i].key, key);
+                    int result = string.Compare(key, keyList[i].key);
                     if(result == -1)
                         return i;
                 }
