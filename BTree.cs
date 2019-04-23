@@ -110,6 +110,11 @@ namespace BTree
 
         public bool Remove(string key)
         {
+            // Removing from a leaf is a trivial case.
+            // From an internal node, I can see bringing the predecessor or successor up to replace the removed key.
+            // Which we choose may be based on the size of the nodes in question.
+            // When does the height of the tree shrink?
+
             return false;
         }
 
