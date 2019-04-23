@@ -12,13 +12,16 @@ namespace BTree
 {
     public partial class Form : System.Windows.Forms.Form
     {
-        public BTree tree;
+        private BTreeDebug tree;
+        private Bitmap bitmap;
 
         public Form()
         {
             InitializeComponent();
 
-            this.tree = new BTree();
+            tree = new BTreeDebug();
+
+            bitmap = new Bitmap(1024, 1024, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
         }
 
         private void buttonAddKey_Click(object sender, EventArgs e)
@@ -27,7 +30,9 @@ namespace BTree
             
             tree.Insert(key, key);
 
-            //...
+            tree.Render(bitmap);
+
+            pictureBox.Image = bitmap;
         }
 
         private void buttonRemoveKey_Click(object sender, EventArgs e)

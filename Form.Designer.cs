@@ -44,7 +44,8 @@
             this.pictureBox.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pictureBox.Location = new System.Drawing.Point(3, 43);
             this.pictureBox.Name = "pictureBox";
-            this.pictureBox.Size = new System.Drawing.Size(794, 404);
+            this.pictureBox.Size = new System.Drawing.Size(128, 128);
+            this.pictureBox.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
             this.pictureBox.TabIndex = 3;
             this.pictureBox.TabStop = false;
             // 
@@ -95,14 +96,14 @@
             this.tableLayoutPanel.RowCount = 2;
             this.tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
             this.tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            this.tableLayoutPanel.Size = new System.Drawing.Size(800, 450);
+            this.tableLayoutPanel.Size = new System.Drawing.Size(510, 495);
             this.tableLayoutPanel.TabIndex = 4;
             // 
             // Form
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(800, 450);
+            this.ClientSize = new System.Drawing.Size(510, 495);
             this.Controls.Add(this.tableLayoutPanel);
             this.Name = "Form";
             this.Text = "B-Tree Demo";

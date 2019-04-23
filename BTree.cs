@@ -2,6 +2,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Drawing;
 
 namespace BTree
 {
@@ -50,16 +51,22 @@ namespace BTree
                     {
                         i = node.keyList.Count / 2;
 
-                        Node leftNode = new Node(node.parent);
-                        Node rightNode = new Node(node.parent);
+                        Node leftNode = new Node(null);
+                        Node rightNode = new Node(null);
 
                         for(int j = 0; j < node.childList.Count; j++)
                         {
                             Node childNode = node.childList[j];
                             if(j <= i)
+                            {
                                 leftNode.childList.Add(childNode);
+                                childNode.parent = leftNode;
+                            }
                             else
+                            {
                                 rightNode.childList.Add(childNode);
+                                childNode.parent = rightNode;
+                            }
                         }
 
                         for(int j = 0; j < node.keyList.Count; j++)
@@ -80,6 +87,8 @@ namespace BTree
                             parentNode.childList[i] = rightNode;
                             parentNode.childList.Insert(i, leftNode);
                             parentNode.keyList.Insert(i, keyValuePair);
+                            leftNode.parent = parentNode;
+                            rightNode.parent = parentNode;
 
                             node = node.parent;
                         }
@@ -130,7 +139,7 @@ namespace BTree
             return null;
         }
 
-        private class Node
+        protected class Node
         {
             public Node(Node parent)
             {
@@ -163,12 +172,21 @@ namespace BTree
                 return null;
             }
 
+            public bool IsLeaf()
+            {
+                for(int i = 0; i < childList.Count; i++)
+                    if(childList[i].keyList.Count > 0)
+                        return false;
+
+                return true;
+            }
+
             public List<KeyValuePair> keyList;
             public List<Node> childList;
             public Node parent;
         }
 
-        private class KeyValuePair
+        protected class KeyValuePair
         {
             public KeyValuePair(string key, object value)
             {
@@ -180,7 +198,177 @@ namespace BTree
             public object value;
         }
 
-        private Node root;
+        protected Node root;
         private int maxKeys;
+    }
+
+    public class BTreeDebug : BTree
+    {
+        public float levelMargin;
+
+        public BTreeDebug(int maxKeys = 5) : base(maxKeys)
+        {
+            levelMargin = 30.0f;
+        }
+
+        public void Render(Bitmap bitmap)
+        {
+            Graphics graphics = Graphics.FromImage(bitmap);
+
+            Rectangle imageRect = new Rectangle(0, 0, bitmap.Width, bitmap.Height);
+            graphics.FillRectangle(new SolidBrush(Color.White), imageRect);
+
+            Font font = new Font("Arial", 12);
+
+            List<RenderBox> renderBoxList = new List<RenderBox>();
+            GenerateRenderBoxesForSubtree(root, graphics, font, renderBoxList);
+
+            RectangleF boundingRectangle = CalcBoundingRectangle(renderBoxList);
+            float deltaX = (imageRect.Width - boundingRectangle.Width) / 2.0f;
+            float deltaY = (imageRect.Height - boundingRectangle.Height) / 2.0f;
+            boundingRectangle.Inflate(deltaX, deltaY);
+
+            foreach(RenderBox renderBox in renderBoxList)
+                renderBox.Render(graphics, font, imageRect, boundingRectangle);
+        }
+
+        private class RenderBox
+        {
+            public RectangleF rectangle;
+            public string label;
+
+            public RenderBox()
+            {
+                rectangle = new RectangleF();
+            }
+
+            public void Render(Graphics graphics, Font font, Rectangle imageRect, RectangleF boundingRectangle)
+            {
+                Rectangle backgroundRect = Rectangle.Round(MapObject(rectangle, imageRect, boundingRectangle));
+                
+                graphics.FillRectangle(new SolidBrush(Color.Gray), backgroundRect);
+                graphics.DrawRectangle(new Pen(Color.Black), backgroundRect);
+
+                PointF point = MapObject(new PointF(rectangle.X + 2.0f, rectangle.Y + 2.0f), imageRect, boundingRectangle);
+                graphics.DrawString(label, font, new SolidBrush(Color.White), point);
+
+                // TODO: Draw lines to children.
+            }
+
+            public RectangleF MapObject(RectangleF rect, Rectangle imageRect, RectangleF boundingRectangle)
+            {
+                PointF pointA = rect.Location;
+                PointF pointB = rect.Location + rect.Size;
+
+                pointA = MapObject(pointA, imageRect, boundingRectangle);
+                pointB = MapObject(pointB, imageRect, boundingRectangle);
+
+                return new RectangleF(pointA, new SizeF(pointB.X - pointA.X, pointB.Y - pointA.Y));
+            }
+
+            public PointF MapObject(PointF point, Rectangle imageRect, RectangleF boundingRectangle)
+            {
+                float u = (point.X - boundingRectangle.X) / boundingRectangle.Width;
+                float v = (point.Y - boundingRectangle.Y) / boundingRectangle.Height;
+
+                float x = imageRect.X + u * imageRect.Width;
+                float y = imageRect.Y + v * imageRect.Height;
+
+                return new PointF(x, y);
+            }
+
+            public void Translate(PointF offset)
+            {
+                rectangle.X += offset.X;
+                rectangle.Y += offset.Y;
+
+                // TODO: Translate lines to children.
+            }
+        }
+
+        private void GenerateRenderBoxesForSubtree(Node node, Graphics graphics, Font font, List<RenderBox> renderBoxList)
+        {
+            RenderBox nodeRenderBox = GenerateRenderBoxForNode(node, graphics, font);
+            renderBoxList.Add(nodeRenderBox);
+
+            if(!node.IsLeaf())
+            {
+                float totalWidth = 0.0f;
+                float maxHeight = 0.0f;
+
+                List<List<RenderBox>> listOfSubRenderBoxLists = new List<List<RenderBox>>();
+                List<RectangleF> boundingRectangleList = new List<RectangleF>();
+
+                for(int i = 0; i < node.childList.Count; i++)
+                {
+                    List<RenderBox> subRenderBoxList = new List<RenderBox>();
+                    GenerateRenderBoxesForSubtree(node.childList[i], graphics, font, subRenderBoxList);
+
+                    listOfSubRenderBoxLists.Add(subRenderBoxList);
+
+                    RectangleF boundingRectangle = CalcBoundingRectangle(subRenderBoxList);
+                    boundingRectangleList.Add(boundingRectangle);
+
+                    totalWidth += boundingRectangle.Width;
+                    if(maxHeight < boundingRectangle.Height)
+                        maxHeight = boundingRectangle.Height;
+                }
+                
+                float left = -totalWidth / 2.0f;
+                float top = nodeRenderBox.rectangle.Bottom + levelMargin;
+                for(int i = 0; i < listOfSubRenderBoxLists.Count; i++)
+                {
+                    // TODO: Add lines to be drawn by nodeRenderBox to each renderBox we translate here.
+
+                    List<RenderBox> subRenderBoxList = listOfSubRenderBoxLists[i];
+                    RectangleF boundingRectangle = boundingRectangleList[i];
+
+                    PointF offset = new PointF(left, top);
+                    for(int j = 0; j < subRenderBoxList.Count; j++)
+                    { 
+                        RenderBox renderBox = subRenderBoxList[j];
+                        renderBox.Translate(offset);
+                        renderBoxList.Add(renderBox);
+                    }
+
+                    left += boundingRectangle.Width;
+                }
+            }
+        }
+
+        private RenderBox GenerateRenderBoxForNode(Node node, Graphics graphics, Font font)
+        {
+            string label = "";
+
+            if(node.keyList.Count == 0)
+                label = "Empty";
+            else
+            {
+                for(int i = 0; i < node.keyList.Count; i++)
+                {
+                    if(i > 0)
+                        label += ", ";
+
+                    label += node.keyList[i].key;
+                }
+            }
+
+            SizeF size = graphics.MeasureString(label, font);
+            RenderBox renderBox = new RenderBox();
+            renderBox.rectangle = new RectangleF(-size.Width / 2.0f, -size.Height / 2.0f, size.Width, size.Height);
+            renderBox.rectangle.Inflate(2.0f, 2.0f);
+            renderBox.label = label;
+            return renderBox;
+        }
+
+        private RectangleF CalcBoundingRectangle(List<RenderBox> renderBoxList)
+        {
+            RectangleF boundingRectangle = new RectangleF(renderBoxList[0].rectangle.Location, renderBoxList[0].rectangle.Size);
+            
+            for(int i = 1; i < renderBoxList.Count; i++)
+                boundingRectangle = RectangleF.Union(boundingRectangle, renderBoxList[i].rectangle);
+
+            return boundingRectangle;
+        }
     }
 }
