@@ -205,10 +205,12 @@ namespace BTree
     public class BTreeDebug : BTree
     {
         public float levelMargin;
+        public float levelPadding;
 
         public BTreeDebug(int maxKeys = 5) : base(maxKeys)
         {
             levelMargin = 30.0f;
+            levelPadding = 5.0f;
         }
 
         public void Render(Bitmap bitmap)
@@ -224,12 +226,13 @@ namespace BTree
             GenerateRenderBoxesForSubtree(root, graphics, font, renderBoxList);
 
             RectangleF boundingRectangle = CalcBoundingRectangle(renderBoxList);
-            float deltaX = (imageRect.Width - boundingRectangle.Width) / 2.0f;
-            float deltaY = (imageRect.Height - boundingRectangle.Height) / 2.0f;
-            boundingRectangle.Inflate(deltaX, deltaY);
+            PointF offset = new PointF(-boundingRectangle.X, -boundingRectangle.Y);
 
             foreach(RenderBox renderBox in renderBoxList)
-                renderBox.Render(graphics, font, imageRect, boundingRectangle);
+            {
+                renderBox.Translate(offset);
+                renderBox.Render(graphics, font);
+            }
         }
 
         private class RenderBox
@@ -242,39 +245,17 @@ namespace BTree
                 rectangle = new RectangleF();
             }
 
-            public void Render(Graphics graphics, Font font, Rectangle imageRect, RectangleF boundingRectangle)
+            public void Render(Graphics graphics, Font font)
             {
-                Rectangle backgroundRect = Rectangle.Round(MapObject(rectangle, imageRect, boundingRectangle));
+                Rectangle backgroundRect = Rectangle.Round(rectangle);
                 
                 graphics.FillRectangle(new SolidBrush(Color.Gray), backgroundRect);
                 graphics.DrawRectangle(new Pen(Color.Black), backgroundRect);
 
-                PointF point = MapObject(new PointF(rectangle.X + 2.0f, rectangle.Y + 2.0f), imageRect, boundingRectangle);
+                PointF point = new PointF(rectangle.X, rectangle.Y);
                 graphics.DrawString(label, font, new SolidBrush(Color.White), point);
 
                 // TODO: Draw lines to children.
-            }
-
-            public RectangleF MapObject(RectangleF rect, Rectangle imageRect, RectangleF boundingRectangle)
-            {
-                PointF pointA = rect.Location;
-                PointF pointB = rect.Location + rect.Size;
-
-                pointA = MapObject(pointA, imageRect, boundingRectangle);
-                pointB = MapObject(pointB, imageRect, boundingRectangle);
-
-                return new RectangleF(pointA, new SizeF(pointB.X - pointA.X, pointB.Y - pointA.Y));
-            }
-
-            public PointF MapObject(PointF point, Rectangle imageRect, RectangleF boundingRectangle)
-            {
-                float u = (point.X - boundingRectangle.X) / boundingRectangle.Width;
-                float v = (point.Y - boundingRectangle.Y) / boundingRectangle.Height;
-
-                float x = imageRect.X + u * imageRect.Width;
-                float y = imageRect.Y + v * imageRect.Height;
-
-                return new PointF(x, y);
             }
 
             public void Translate(PointF offset)
@@ -314,7 +295,8 @@ namespace BTree
                         maxHeight = boundingRectangle.Height;
                 }
                 
-                float left = -totalWidth / 2.0f;
+                totalWidth += levelPadding * (listOfSubRenderBoxLists.Count - 1);
+                float left = -totalWidth / 2.0f + nodeRenderBox.rectangle.Width / 2.0f;
                 float top = nodeRenderBox.rectangle.Bottom + levelMargin;
                 for(int i = 0; i < listOfSubRenderBoxLists.Count; i++)
                 {
@@ -331,7 +313,7 @@ namespace BTree
                         renderBoxList.Add(renderBox);
                     }
 
-                    left += boundingRectangle.Width;
+                    left += boundingRectangle.Width + levelPadding;
                 }
             }
         }
@@ -355,8 +337,7 @@ namespace BTree
 
             SizeF size = graphics.MeasureString(label, font);
             RenderBox renderBox = new RenderBox();
-            renderBox.rectangle = new RectangleF(-size.Width / 2.0f, -size.Height / 2.0f, size.Width, size.Height);
-            renderBox.rectangle.Inflate(2.0f, 2.0f);
+            renderBox.rectangle = new RectangleF(0.0f, 0.0f, size.Width, size.Height);
             renderBox.label = label;
             return renderBox;
         }
